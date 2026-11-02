@@ -12,6 +12,7 @@ const isScheduledNow = (task) => task.scheduled && (task.scheduled.toMillis() ==
 const isStartedNow = (task) => task.start && (task.start.toMillis() === today || (task.start.toMillis() < today && !task.completed));
 const isListed = (page, task) => !isBenefit(page, task) && (isScheduledNow(task) || isStartedNow(task));
 const isDuePassed = (task) => !task.completed && task.due && task.due.toMillis() < today;
+const isScheduledPassed = (task) => !task.completed && task.scheduled && task.scheduled.toMillis() < today && !isDuePassed(task);
 const pages = dv.pages().where(p => p.file.folder !== "system" && !p.file.folder.startsWith("system/")).where(p => p.file.tasks.some(t => isListed(p, t)));
 const groups = pages.groupBy(p => p.area || "Other")
   .sort(g => {
@@ -35,6 +36,7 @@ for (const group of groups) {
   const paths = group.rows.map(p => p.file.path.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|");
   const listed = "((has scheduled date) AND ((scheduled today) OR ((scheduled before today) AND (not done)))) OR ((has start date) AND ((starts today) OR ((starts before today) AND (not done))))";
   const duePassed = "((due before today) AND (not done))";
+  const scheduledPassed = "((scheduled before today) AND (not done))";
   const renderTasks = async (extraFilters, cls) => {
     const query = [
       "```tasks",
@@ -46,6 +48,7 @@ for (const group of groups) {
       "hide edit button",
       "hide start date",
       "hide scheduled date",
+      "hide due date",
       "hide recurrence rule",
       "hide task count",
       "hide toolbar",
@@ -60,7 +63,8 @@ for (const group of groups) {
     }
   }
   if (tasks.some(isDuePassed)) await renderTasks([duePassed], "task-overdue");
-  if (tasks.some(t => !isDuePassed(t))) await renderTasks([`NOT ${duePassed}`], "task-open");
+  if (tasks.some(isScheduledPassed)) await renderTasks([scheduledPassed, `NOT ${duePassed}`], "task-reminder");
+  if (tasks.some(t => !isDuePassed(t) && !isScheduledPassed(t))) await renderTasks([`NOT ${duePassed}`, `NOT ${scheduledPassed}`], "task-open");
 }
 if (!pages.length) dv.paragraph("No tasks started or scheduled for today or earlier.");
 ```
@@ -88,7 +92,7 @@ if (card) {
     const recurrence = task[1].match(/🔁\s+(.+?)(?=\s+[🛫⏳📅]|$)/);
     const rule = recurrence ? recurrence[1].trim() : "";
     const interval = intervals.find(item => item.rule === rule);
-    const state = due[1] <= today ? "due" : scheduled[1] <= today ? "scheduled" : "open";
+    const state = due[1] <= today ? "due" : scheduled[1] < today ? "scheduled" : "open";
     found[interval ? interval.key : "once"].push({ state });
   }
 }
@@ -119,6 +123,7 @@ async function renderTasks(extraFilters, cls) {
     "hide start date",
     "hide edit button",
     "hide scheduled date",
+    "hide due date",
     "hide recurrence rule",
     "hide task count",
     "hide toolbar",
@@ -128,8 +133,8 @@ async function renderTasks(extraFilters, cls) {
 }
 async function renderGroup(entries, filters) {
   if (entries.some(entry => entry.state === "due")) await renderTasks([...filters, "((due today) OR (due before today))"], "finance-due");
-  if (entries.some(entry => entry.state === "scheduled")) await renderTasks([...filters, "((scheduled today) OR (scheduled before today))", "NOT ((due today) OR (due before today))"], "finance-scheduled");
-  if (entries.some(entry => entry.state === "open")) await renderTasks([...filters, "NOT ((scheduled today) OR (scheduled before today))"], "finance-open");
+  if (entries.some(entry => entry.state === "scheduled")) await renderTasks([...filters, "(scheduled before today)", "NOT ((due today) OR (due before today))"], "finance-scheduled");
+  if (entries.some(entry => entry.state === "open")) await renderTasks([...filters, "NOT ((due today) OR (due before today))", "NOT (scheduled before today)"], "finance-open");
 }
 let shown = 0;
 for (const interval of intervals) {
