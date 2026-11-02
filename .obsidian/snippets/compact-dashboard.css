@@ -161,16 +161,19 @@
 /* Benefit rows. Orange: the reminder has arrived and the benefit is still open.
    Red: the last usable day has arrived. The row box includes the checkbox gutter. */
 .compact-dashboard .finance-scheduled ul.contains-task-list,
-.compact-dashboard .finance-due ul.contains-task-list {
+.compact-dashboard .finance-due ul.contains-task-list,
+.compact-dashboard .task-overdue ul.contains-task-list {
   padding-inline-start: 0;
 }
 .compact-dashboard .finance-scheduled .contains-task-list > .task-list-item,
-.compact-dashboard .finance-due .contains-task-list > .task-list-item {
+.compact-dashboard .finance-due .contains-task-list > .task-list-item,
+.compact-dashboard .task-overdue .contains-task-list > .task-list-item {
   position: relative;
   padding-inline-start: 1.5em;
 }
 .compact-dashboard .finance-scheduled .task-list-item-checkbox,
-.compact-dashboard .finance-due .task-list-item-checkbox {
+.compact-dashboard .finance-due .task-list-item-checkbox,
+.compact-dashboard .task-overdue .task-list-item-checkbox {
   position: absolute;
   inset-inline-start: .15em;
   top: .28em;
@@ -183,16 +186,19 @@
   color: var(--color-orange);
   font-weight: 600;
 }
-.compact-dashboard .finance-due .contains-task-list > .task-list-item {
+.compact-dashboard .finance-due .contains-task-list > .task-list-item,
+.compact-dashboard .task-overdue .contains-task-list > .task-list-item {
   background: color-mix(in srgb, var(--color-red) 16%, transparent);
 }
-.compact-dashboard .finance-due .task-due {
+.compact-dashboard .finance-due .task-due,
+.compact-dashboard .task-overdue .task-due {
   color: var(--color-red);
   font-weight: 600;
 }
 .compact-dashboard .finance-due + .finance-scheduled,
 .compact-dashboard .finance-due + .finance-open,
-.compact-dashboard .finance-scheduled + .finance-open {
+.compact-dashboard .finance-scheduled + .finance-open,
+.compact-dashboard .task-overdue + .task-open {
   margin-top: .35em;
 }
 

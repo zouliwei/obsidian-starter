@@ -8,9 +8,11 @@ cssclasses:
 const areas = ["growth", "finance", "fitness", "cooking", "travel", "lifestyle"];
 const today = dv.date("today").toMillis();
 const isBenefit = (page, task) => page.file.name === "Credit Cards" && task.due;
-const pages = dv.pages().where(p => p.file.folder !== "system" && !p.file.folder.startsWith("system/")).where(p => p.file.tasks.some(t =>
-  !isBenefit(p, t) && t.scheduled && (t.scheduled.toMillis() === today ||
-    (t.scheduled.toMillis() < today && !t.completed))));
+const isScheduledNow = (task) => task.scheduled && (task.scheduled.toMillis() === today || (task.scheduled.toMillis() < today && !task.completed));
+const isStartedNow = (task) => task.start && (task.start.toMillis() === today || (task.start.toMillis() < today && !task.completed));
+const isListed = (page, task) => !isBenefit(page, task) && (isScheduledNow(task) || isStartedNow(task));
+const isDuePassed = (task) => !task.completed && task.due && task.due.toMillis() < today;
+const pages = dv.pages().where(p => p.file.folder !== "system" && !p.file.folder.startsWith("system/")).where(p => p.file.tasks.some(t => isListed(p, t)));
 const groups = pages.groupBy(p => p.area || "Other")
   .sort(g => {
     const rank = areas.indexOf(g.key);
@@ -31,24 +33,36 @@ const { MarkdownRenderer } = require("obsidian");
 for (const group of groups) {
   dv.header(3, group.key.charAt(0).toUpperCase() + group.key.slice(1));
   const paths = group.rows.map(p => p.file.path.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|");
-  const query = [
-    "```tasks",
-    "(scheduled today) OR ((scheduled before today) AND (not done))",
-    `path regex matches /^(?:${paths})$/`,
-    ...(group.key === "finance" ? ["((path regex does not match /Credit Cards\\.md$/) OR (no due date))"] : []),
-    "sort by scheduled AND priority AND filename",
-    "hide edit button",
-    "hide due date",
-    "hide scheduled date",
-    "hide recurrence rule",
-    "hide task count",
-    "hide toolbar",
-    "```"
-  ].join("\n");
-  const target = dv.container.createDiv();
-  await MarkdownRenderer.render(app, query, target, dv.current().file.path, dv.component);
+  const listed = "((has scheduled date) AND ((scheduled today) OR ((scheduled before today) AND (not done)))) OR ((has start date) AND ((starts today) OR ((starts before today) AND (not done))))";
+  const duePassed = "((due before today) AND (not done))";
+  const renderTasks = async (extraFilters, cls) => {
+    const query = [
+      "```tasks",
+      listed,
+      ...extraFilters,
+      `path regex matches /^(?:${paths})$/`,
+      ...(group.key === "finance" ? ["((path regex does not match /Credit Cards\\.md$/) OR (no due date))"] : []),
+      "sort by due AND scheduled AND priority AND filename",
+      "hide edit button",
+      "hide start date",
+      "hide scheduled date",
+      "hide recurrence rule",
+      "hide task count",
+      "hide toolbar",
+      "```"
+    ].join("\n");
+    await MarkdownRenderer.render(app, query, dv.container.createDiv(cls ? { cls } : {}), dv.current().file.path, dv.component);
+  };
+  const tasks = [];
+  for (const page of group.rows) {
+    for (const task of page.file.tasks) {
+      if (isListed(page, task)) tasks.push(task);
+    }
+  }
+  if (tasks.some(isDuePassed)) await renderTasks([duePassed], "task-overdue");
+  if (tasks.some(t => !isDuePassed(t))) await renderTasks([`NOT ${duePassed}`], "task-open");
 }
-if (!pages.length) dv.paragraph("No tasks scheduled for today or overdue.");
+if (!pages.length) dv.paragraph("No tasks started or scheduled for today or earlier.");
 ```
 
 ## [[Credit Cards]]
