@@ -1,0 +1,209 @@
+/* Shared by Dashboard and the Projects, Tasks, and Notes views. Uses the active theme. */
+.compact-dashboard {
+  --file-line-width: 860px;
+  --h2-size: 1.12em;
+  --h2-weight: 600;
+  --h2-color: var(--text-normal);
+  --heading-spacing: 1.2em;
+  --list-spacing: 0;
+}
+
+/* Style-only properties stay in YAML, not the rendered properties panel.
+   Keep meaningful properties visible; hide the panel only when none remain.
+   Source mode's raw YAML is unaffected. Applies to all notes, including views/. */
+:is(.markdown-preview-view, .markdown-source-view) .metadata-property[data-property-key="cssclasses"],
+:is(.markdown-preview-view, .markdown-source-view) .metadata-container:not(:has(.metadata-property:not([data-property-key="cssclasses"]))) {
+  display: none !important;
+}
+
+/* Small, consistent section titles; links remain discoverable on hover/focus. */
+.compact-dashboard :is(h2, .HyperMD-header-2) {
+  margin-block: 1.1em .45em;
+  padding-bottom: .3em;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.compact-dashboard :is(h2, .HyperMD-header-2) a {
+  color: var(--text-normal);
+  text-decoration: none;
+}
+.compact-dashboard :is(.dataview, .contains-task-list) a.internal-link {
+  text-decoration: none;
+}
+.compact-dashboard a:hover {
+  color: var(--text-accent-hover);
+  text-decoration: underline;
+}
+.compact-dashboard :is(a, button, input):focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 3px;
+}
+
+/* Keep the personal reminder visually secondary. */
+.compact-dashboard blockquote:not(.callout) {
+  margin-block: .35em .8em;
+  padding: .2em .7em;
+  border-left: 2px solid var(--background-modifier-border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: .88em;
+  line-height: 1.5;
+}
+.compact-dashboard blockquote p { margin-block: 0; }
+
+/* Tips stay one row when folded, with compact area headings when expanded. */
+.compact-dashboard .callout[data-callout="tip"] {
+  margin-block: .45em .7em;
+  padding: .45em .65em;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  font-size: .9em;
+  font-style: normal;
+}
+.compact-dashboard .callout[data-callout="tip"] .callout-title {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.compact-dashboard .callout[data-callout="tip"] h3 {
+  margin: .65em 0 .2em;
+  font-size: 1em;
+  font-weight: 600;
+}
+.compact-dashboard .callout[data-callout="tip"] ul {
+  margin-block: .15em .4em;
+  padding-inline-start: 1.25em;
+}
+
+/* Compact task rows with quiet separators. */
+.compact-dashboard ul.contains-task-list {
+  margin-block: .4em;
+  padding-inline-start: 1.5em;
+  font-size: 1em;
+}
+.compact-dashboard .contains-task-list > .task-list-item {
+  margin-block: 0;
+  padding-block: .04em;
+  line-height: 1.4;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.compact-dashboard .contains-task-list > .task-list-item:last-child {
+  border-bottom: 0;
+}
+.compact-dashboard .task-list-item:hover {
+  background: var(--background-secondary);
+}
+.compact-dashboard .tasks-backlink,
+.compact-dashboard .tasks-backlink a {
+  color: var(--text-muted);
+  font-size: .88em;
+  text-decoration: none;
+}
+.compact-dashboard .tasks-count,
+.compact-dashboard p.tasks-count {
+  margin-block: .35em .6em;
+  padding-left: 0;
+  color: var(--text-muted);
+  font-size: .8em;
+}
+
+/* Area headings span responsive bullet grids, sized to the note pane. */
+.compact-dashboard .dashboard-directory h3,
+.compact-dashboard .dashboard-task-areas h3 {
+  margin: .7em 0 .15em;
+  padding: 0;
+  border: 0;
+  color: var(--text-muted);
+  font-size: .85em;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.compact-dashboard .dashboard-directory h3:first-child { margin-top: .35em; }
+.compact-dashboard .dashboard-directory {
+  container-type: inline-size;
+  container-name: directory;
+}
+.compact-dashboard .dashboard-directory ul.dataview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 1.75em;
+  row-gap: 0;
+  margin: 0;
+  padding-inline-start: 1.25em;
+  list-style: disc outside;
+}
+@container directory (min-width: 480px) {
+  .compact-dashboard .dashboard-directory ul.dataview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.compact-dashboard .dashboard-directory ul.dataview > li {
+  display: list-item;
+  min-width: 0;
+  list-style: disc outside;
+  max-width: 100%;
+  margin: 0;
+  padding: .12em 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.compact-dashboard .dashboard-directory .list-bullet { display: none; }
+.compact-dashboard .dashboard-directory a.internal-link { text-decoration: none; }
+.compact-dashboard .dashboard-directory a.internal-link:hover { text-decoration: underline; }
+.compact-dashboard .task-list-item.is-checked .tasks-list-text {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.compact-dashboard .dashboard-task-areas ul.contains-task-list {
+  margin-block: .15em .35em;
+}
+
+/* Benefit rows. Orange: the reminder has arrived and the benefit is still open.
+   Red: the last usable day has arrived. The row box includes the checkbox gutter. */
+.compact-dashboard .finance-scheduled ul.contains-task-list,
+.compact-dashboard .finance-due ul.contains-task-list {
+  padding-inline-start: 0;
+}
+.compact-dashboard .finance-scheduled .contains-task-list > .task-list-item,
+.compact-dashboard .finance-due .contains-task-list > .task-list-item {
+  position: relative;
+  padding-inline-start: 1.5em;
+}
+.compact-dashboard .finance-scheduled .task-list-item-checkbox,
+.compact-dashboard .finance-due .task-list-item-checkbox {
+  position: absolute;
+  inset-inline-start: .15em;
+  top: .28em;
+  margin: 0;
+}
+.compact-dashboard .finance-scheduled .contains-task-list > .task-list-item {
+  background: color-mix(in srgb, var(--color-orange) 16%, transparent);
+}
+.compact-dashboard .finance-scheduled .task-scheduled {
+  color: var(--color-orange);
+  font-weight: 600;
+}
+.compact-dashboard .finance-due .contains-task-list > .task-list-item {
+  background: color-mix(in srgb, var(--color-red) 16%, transparent);
+}
+.compact-dashboard .finance-due .task-due {
+  color: var(--color-red);
+  font-weight: 600;
+}
+.compact-dashboard .finance-due + .finance-scheduled,
+.compact-dashboard .finance-due + .finance-open,
+.compact-dashboard .finance-scheduled + .finance-open {
+  margin-top: .35em;
+}
+
+/* Links and tags share one text flow, wrapping naturally on narrow screens. */
+.compact-dashboard .dashboard-directory .directory-entry > p {
+  display: inline;
+  margin: 0;
+}
+.compact-dashboard .directory-tags {
+  margin-inline-start: .4em;
+  color: var(--text-muted);
+  font-size: .75em;
+  overflow-wrap: anywhere;
+}

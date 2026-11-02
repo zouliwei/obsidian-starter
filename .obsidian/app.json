@@ -1,0 +1,31 @@
+{
+  "attachmentFolderPath": "system/assets/",
+  "promptDelete": false,
+  "alwaysUpdateLinks": true,
+  "spellcheck": false,
+  "mobileToolbarCommands": [
+    "editor:unindent-list",
+    "editor:indent-list",
+    "editor:undo",
+    "editor:redo",
+    "editor:insert-wikilink",
+    "editor:toggle-bold",
+    "editor:insert-embed",
+    "editor:insert-tag",
+    "editor:attach-file",
+    "editor:set-heading",
+    "editor:toggle-italics",
+    "editor:toggle-strikethrough",
+    "editor:toggle-highlight",
+    "editor:toggle-code",
+    "editor:toggle-blockquote",
+    "editor:insert-link",
+    "editor:toggle-bullet-list",
+    "editor:toggle-numbered-list",
+    "editor:toggle-checklist-status",
+    "editor:configure-toolbar"
+  ],
+  "openBehavior": "file:Dashboard.md",
+  "newFileLocation": "folder",
+  "newFileFolderPath": "data"
+}

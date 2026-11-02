@@ -1,0 +1,37 @@
+# ==========================================
+# Obsidian Gitignore Template
+# Sleek and optimized for version control
+# ==========================================
+
+# --- Obsidian Workspace & Cache (High Churn) ---
+# These files change constantly as you open, close, and scroll through notes.
+# Excluding them prevents constant, noisy commit diffs.
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/graph.json
+.obsidian/cache/
+
+# --- Obsidian Trash ---
+# Exclude files deleted inside Obsidian
+.trash/
+
+# --- Community Plugins & Themes (Optional) ---
+# If you want to sync plugin files directly, comment out the line below.
+# By default, we ignore the downloaded plugin folders to keep the repo clean.
+# Obsidian will re-download them based on `.obsidian/community-plugins.json`.
+.obsidian/plugins/
+.obsidian/themes/
+
+# --- OS-specific & Sync Conflict Files ---
+.DS_Store
+.directory
+Thumbs.db
+*.sync-conflict-*
+
+# --- Editor Swap Files ---
+*.swp
+
+# --- AI Agent / Assistant Files (Optional) ---
+# Antigravity/Claude temporary agent states and logs
+.antigravitycli/
+.claude/
