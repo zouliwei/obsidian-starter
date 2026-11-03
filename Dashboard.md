@@ -154,6 +154,7 @@ if (!shown) dv.paragraph("No credit card benefits that can be used today or earl
 ## [[Projects]]
 ```dataviewjs
 const areas = ["growth", "fitness", "finance", "cooking", "travel", "lifestyle"];
+const emptyText = "No active projects.";
 const pages = dv.pages().where(p => p.file.folder !== "system" && !p.file.folder.startsWith("system/"))
   .where(p => p.type === "project" && p.status === "active")
   .sort(p => {
@@ -173,27 +174,72 @@ const groups = pages.groupBy(p => p.area || "Other")
     return (rank < 0 ? "7-" : `${rank}-`) + g.key;
   });
 dv.container.classList.add("dashboard-directory");
-const { MarkdownRenderer } = require("obsidian");
+const { setIcon } = require("obsidian");
+const syncDataviewViews = () => {
+  const index = app.plugins.plugins.dataview?.index;
+  if (!index) return;
+  const rev = index.revision;
+  const walk = (comp) => {
+    if (comp && typeof comp.lastReload === "number" && typeof comp.maybeRefresh === "function") comp.lastReload = rev;
+    for (const child of comp?._children || []) walk(child);
+  };
+  app.workspace.iterateAllLeaves((leaf) => { if (leaf.view) walk(leaf.view); });
+};
+const archivePage = async (page, item) => {
+  const file = app.vault.getAbstractFileByPath(page.file.path);
+  if (!file) return;
+  const list = item.parentElement;
+  const heading = list?.previousElementSibling;
+  item.remove();
+  if (list && !list.children.length) {
+    list.remove();
+    if (heading && /^H[1-6]$/.test(heading.tagName)) heading.remove();
+  }
+  if (!dv.container.querySelector("li.directory-entry") && !dv.container.querySelector("p")) dv.paragraph(emptyText);
+  const plugin = app.plugins.plugins.dataview;
+  const before = plugin?.index?.revision;
+  await app.fileManager.processFrontMatter(file, (fm) => { fm.status = "archived"; });
+  const markCurrent = async () => {
+    const start = Date.now();
+    while (plugin?.index && plugin.index.revision === before && Date.now() - start < 2000) await new Promise((r) => setTimeout(r, 16));
+    syncDataviewViews();
+  };
+  await markCurrent();
+  const delay = (plugin?.settings?.refreshInterval ?? 2500) + 50;
+  window.setTimeout(syncDataviewViews, Math.min(delay, 400));
+  window.setTimeout(syncDataviewViews, delay);
+};
 for (const group of groups) {
   dv.header(3, group.key.charAt(0).toUpperCase() + group.key.slice(1));
   const list = dv.container.createEl("ul", { cls: "dataview" });
   for (const page of group.rows) {
     const item = list.createEl("li", { cls: "directory-entry" });
-    await MarkdownRenderer.render(app, page.file.link.toString(), item, dv.current().file.path, dv.component);
+    const line = item.createEl("p");
+    line.createEl("a", { cls: "internal-link", text: page.file.name, href: page.file.path, attr: { "data-href": page.file.path } });
     const tags = Array.from(page.file.tags || []);
     if (tags.length) {
-      const line = item.querySelector("p") || item;
       line.appendText(" ");
       line.createEl("span", { cls: "directory-tags", text: tags.join(" ") });
     }
+    const archive = line.createEl("a", { cls: "directory-archive", attr: { href: "#", title: "Archive", "aria-label": "Archive" } });
+    setIcon(archive, "archive");
+    archive.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (archive.dataset.busy) return;
+      archive.dataset.busy = "1";
+      try { await archivePage(page, item); }
+      finally { delete archive.dataset.busy; }
+    });
   }
 }
-if (!pages.length) dv.paragraph("No active projects.");
+if (!pages.length) dv.paragraph(emptyText);
 ```
 
 ## [[Notes]]
 ```dataviewjs
 const areas = ["growth", "finance", "fitness", "cooking", "travel", "lifestyle"];
+const emptyText = "No active notes.";
 const pages = dv.pages().where(p => p.file.folder !== "system" && !p.file.folder.startsWith("system/"))
   .where(p => p.type === "note" && p.status === "active")
   .sort(p => {
@@ -213,20 +259,64 @@ const groups = pages.groupBy(p => p.area || "Other")
     return (rank < 0 ? "7-" : `${rank}-`) + g.key;
   });
 dv.container.classList.add("dashboard-directory");
-const { MarkdownRenderer } = require("obsidian");
+const { setIcon } = require("obsidian");
+const syncDataviewViews = () => {
+  const index = app.plugins.plugins.dataview?.index;
+  if (!index) return;
+  const rev = index.revision;
+  const walk = (comp) => {
+    if (comp && typeof comp.lastReload === "number" && typeof comp.maybeRefresh === "function") comp.lastReload = rev;
+    for (const child of comp?._children || []) walk(child);
+  };
+  app.workspace.iterateAllLeaves((leaf) => { if (leaf.view) walk(leaf.view); });
+};
+const archivePage = async (page, item) => {
+  const file = app.vault.getAbstractFileByPath(page.file.path);
+  if (!file) return;
+  const list = item.parentElement;
+  const heading = list?.previousElementSibling;
+  item.remove();
+  if (list && !list.children.length) {
+    list.remove();
+    if (heading && /^H[1-6]$/.test(heading.tagName)) heading.remove();
+  }
+  if (!dv.container.querySelector("li.directory-entry") && !dv.container.querySelector("p")) dv.paragraph(emptyText);
+  const plugin = app.plugins.plugins.dataview;
+  const before = plugin?.index?.revision;
+  await app.fileManager.processFrontMatter(file, (fm) => { fm.status = "archived"; });
+  const markCurrent = async () => {
+    const start = Date.now();
+    while (plugin?.index && plugin.index.revision === before && Date.now() - start < 2000) await new Promise((r) => setTimeout(r, 16));
+    syncDataviewViews();
+  };
+  await markCurrent();
+  const delay = (plugin?.settings?.refreshInterval ?? 2500) + 50;
+  window.setTimeout(syncDataviewViews, Math.min(delay, 400));
+  window.setTimeout(syncDataviewViews, delay);
+};
 for (const group of groups) {
   dv.header(3, group.key.charAt(0).toUpperCase() + group.key.slice(1));
   const list = dv.container.createEl("ul", { cls: "dataview" });
   for (const page of group.rows) {
     const item = list.createEl("li", { cls: "directory-entry" });
-    await MarkdownRenderer.render(app, page.file.link.toString(), item, dv.current().file.path, dv.component);
+    const line = item.createEl("p");
+    line.createEl("a", { cls: "internal-link", text: page.file.name, href: page.file.path, attr: { "data-href": page.file.path } });
     const tags = Array.from(page.file.tags || []);
     if (tags.length) {
-      const line = item.querySelector("p") || item;
       line.appendText(" ");
       line.createEl("span", { cls: "directory-tags", text: tags.join(" ") });
     }
+    const archive = line.createEl("a", { cls: "directory-archive", attr: { href: "#", title: "Archive", "aria-label": "Archive" } });
+    setIcon(archive, "archive");
+    archive.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (archive.dataset.busy) return;
+      archive.dataset.busy = "1";
+      try { await archivePage(page, item); }
+      finally { delete archive.dataset.busy; }
+    });
   }
 }
-if (!pages.length) dv.paragraph("No active notes.");
+if (!pages.length) dv.paragraph(emptyText);
 ```
