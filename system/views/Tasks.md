@@ -43,7 +43,7 @@ for (const group of groups) {
       ...extraFilters,
       "((path regex does not match /Credit Cards\\.md$/) OR (no due date))",
       `path regex matches /^(?:${paths})$/`,
-      "sort by due AND priority AND filename",
+      "sort by status.type AND priority AND filename",
       "hide start date",
       "hide scheduled date",
       "hide due date",

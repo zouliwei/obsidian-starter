@@ -44,7 +44,7 @@ for (const group of groups) {
       ...extraFilters,
       `path regex matches /^(?:${paths})$/`,
       ...(group.key === "finance" ? ["((path regex does not match /Credit Cards\\.md$/) OR (no due date))"] : []),
-      "sort by due AND scheduled AND priority AND filename",
+      "sort by status.type AND scheduled AND priority AND filename",
       "hide edit button",
       "hide start date",
       "hide scheduled date",
