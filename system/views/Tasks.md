@@ -8,10 +8,7 @@ cssclasses:
 const areas = ["growth", "finance", "fitness", "cooking", "travel", "lifestyle"];
 const tomorrow = dv.date("tomorrow").toMillis();
 const isBenefit = (page, task) => page.file.name === "Credit Cards" && task.due;
-const today = dv.date("today").toMillis();
-const isTomorrow = (page, task) => !isBenefit(page, task) && ((task.scheduled && task.scheduled.toMillis() === tomorrow) || (task.start && !task.completed && task.start.toMillis() <= tomorrow));
-const isDuePassed = (task) => !task.completed && task.due && task.due.toMillis() < tomorrow;
-const isScheduledPassed = (task) => !task.completed && task.scheduled && task.scheduled.toMillis() < tomorrow && !isDuePassed(task);
+const isTomorrow = (page, task) => !isBenefit(page, task) && ((task.scheduled && task.scheduled.toMillis() === tomorrow) || (task.start && !task.completed && task.start.toMillis() <= tomorrow) || (task.completed && task.start && task.due && task.start.toMillis() <= tomorrow && task.due.toMillis() >= tomorrow));
 const pages = dv.pages().where(p => p.file.folder !== "system" && !p.file.folder.startsWith("system/")).where(p => p.file.tasks.some(t => isTomorrow(p, t)));
 const groups = pages.groupBy(p => p.area || "Other")
   .sort(g => {
@@ -33,39 +30,24 @@ const { MarkdownRenderer } = require("obsidian");
 for (const group of groups) {
   dv.header(3, group.key.charAt(0).toUpperCase() + group.key.slice(1));
   const paths = group.rows.map(p => p.file.path.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|");
-  const listed = "((has scheduled date) AND (scheduled tomorrow)) OR ((has start date) AND (not done) AND ((starts tomorrow) OR (starts before tomorrow)))";
-  const duePassed = "((due before tomorrow) AND (not done))";
-  const scheduledPassed = "((scheduled before tomorrow) AND (not done))";
-  const renderTasks = async (extraFilters, cls) => {
-    const query = [
-      "```tasks",
-      listed,
-      ...extraFilters,
-      "((path regex does not match /Credit Cards\\.md$/) OR (no due date))",
-      `path regex matches /^(?:${paths})$/`,
-      "sort by status.type",
-      "sort by priority",
-      "sort by filename reverse",
-      "hide start date",
-      "hide scheduled date",
-      "hide due date",
-      "hide edit button",
-      "hide recurrence rule",
-      "hide task count",
-      "hide toolbar",
-      "```"
-    ].join("\n");
-    await MarkdownRenderer.render(app, query, dv.container.createDiv(cls ? { cls } : {}), dv.current().file.path, dv.component);
-  };
-  const tasks = [];
-  for (const page of group.rows) {
-    for (const task of page.file.tasks) {
-      if (isTomorrow(page, task)) tasks.push(task);
-    }
-  }
-  if (tasks.some(isDuePassed)) await renderTasks([duePassed], "task-overdue");
-  if (tasks.some(isScheduledPassed)) await renderTasks([scheduledPassed, `NOT ${duePassed}`], "task-reminder");
-  if (tasks.some(t => !isDuePassed(t) && !isScheduledPassed(t))) await renderTasks([`NOT ${duePassed}`, `NOT ${scheduledPassed}`], "task-open");
+  const listed = "((has scheduled date) AND (scheduled tomorrow)) OR ((has start date) AND (not done) AND ((starts tomorrow) OR (starts before tomorrow))) OR ((done) AND (has start date) AND (has due date) AND ((starts tomorrow) OR (starts before tomorrow)) AND ((due tomorrow) OR (due after tomorrow)))";
+  // Keep due/scheduled in the DOM so CSS can mark overdue/reminder rows; they are visually hidden on .task-mixed.
+  const query = [
+    "```tasks",
+    listed,
+    "((path regex does not match /Credit Cards\\.md$/) OR (no due date))",
+    `path regex matches /^(?:${paths})$/`,
+    "sort by status.type",
+    "sort by priority",
+    "sort by filename reverse",
+    "hide start date",
+    "hide edit button",
+    "hide recurrence rule",
+    "hide task count",
+    "hide toolbar",
+    "```"
+  ].join("\n");
+  await MarkdownRenderer.render(app, query, dv.container.createDiv({ cls: "task-mixed due-through-today remind-through-today" }), dv.current().file.path, dv.component);
 }
 if (!pages.length) dv.paragraph("No tasks scheduled for tomorrow or already started.");
 ```

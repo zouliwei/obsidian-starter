@@ -9,10 +9,8 @@ const areas = ["growth", "finance", "fitness", "cooking", "travel", "lifestyle"]
 const today = dv.date("today").toMillis();
 const isBenefit = (page, task) => page.file.name === "Credit Cards" && task.due;
 const isScheduledNow = (task) => task.scheduled && (task.scheduled.toMillis() === today || (task.scheduled.toMillis() < today && !task.completed));
-const isStartedNow = (task) => task.start && (task.start.toMillis() === today || (task.start.toMillis() < today && !task.completed));
+const isStartedNow = (task) => task.start && (task.start.toMillis() === today || (task.start.toMillis() < today && !task.completed) || (task.completed && task.due && task.start.toMillis() <= today && task.due.toMillis() >= today));
 const isListed = (page, task) => !isBenefit(page, task) && (isScheduledNow(task) || isStartedNow(task));
-const isDuePassed = (task) => !task.completed && task.due && task.due.toMillis() < today;
-const isScheduledPassed = (task) => !task.completed && task.scheduled && task.scheduled.toMillis() < today && !isDuePassed(task);
 const pages = dv.pages().where(p => p.file.folder !== "system" && !p.file.folder.startsWith("system/")).where(p => p.file.tasks.some(t => isListed(p, t)));
 const groups = pages.groupBy(p => p.area || "Other")
   .sort(g => {
@@ -34,40 +32,25 @@ const { MarkdownRenderer } = require("obsidian");
 for (const group of groups) {
   dv.header(3, group.key.charAt(0).toUpperCase() + group.key.slice(1));
   const paths = group.rows.map(p => p.file.path.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|");
-  const listed = "((has scheduled date) AND ((scheduled today) OR ((scheduled before today) AND (not done)))) OR ((has start date) AND ((starts today) OR ((starts before today) AND (not done))))";
-  const duePassed = "((due before today) AND (not done))";
-  const scheduledPassed = "((scheduled before today) AND (not done))";
-  const renderTasks = async (extraFilters, cls) => {
-    const query = [
-      "```tasks",
-      listed,
-      ...extraFilters,
-      `path regex matches /^(?:${paths})$/`,
-      ...(group.key === "finance" ? ["((path regex does not match /Credit Cards\\.md$/) OR (no due date))"] : []),
-      "sort by status.type",
-      "sort by scheduled",
-      "sort by priority",
-      "sort by filename reverse",
-      "hide edit button",
-      "hide start date",
-      "hide scheduled date",
-      "hide due date",
-      "hide recurrence rule",
-      "hide task count",
-      "hide toolbar",
-      "```"
-    ].join("\n");
-    await MarkdownRenderer.render(app, query, dv.container.createDiv(cls ? { cls } : {}), dv.current().file.path, dv.component);
-  };
-  const tasks = [];
-  for (const page of group.rows) {
-    for (const task of page.file.tasks) {
-      if (isListed(page, task)) tasks.push(task);
-    }
-  }
-  if (tasks.some(isDuePassed)) await renderTasks([duePassed], "task-overdue");
-  if (tasks.some(isScheduledPassed)) await renderTasks([scheduledPassed, `NOT ${duePassed}`], "task-reminder");
-  if (tasks.some(t => !isDuePassed(t) && !isScheduledPassed(t))) await renderTasks([`NOT ${duePassed}`, `NOT ${scheduledPassed}`], "task-open");
+  const listed = "((has scheduled date) AND ((scheduled today) OR ((scheduled before today) AND (not done)))) OR ((has start date) AND ((starts today) OR ((starts before today) AND (not done)))) OR ((done) AND (has start date) AND (has due date) AND ((starts today) OR (starts before today)) AND ((due today) OR (due after today)))";
+  // Keep due/scheduled in the DOM so CSS can mark overdue/reminder rows; they are visually hidden on .task-mixed.
+  const query = [
+    "```tasks",
+    listed,
+    `path regex matches /^(?:${paths})$/`,
+    ...(group.key === "finance" ? ["((path regex does not match /Credit Cards\\.md$/) OR (no due date))"] : []),
+    "sort by status.type",
+    "sort by scheduled",
+    "sort by priority",
+    "sort by filename reverse",
+    "hide edit button",
+    "hide start date",
+    "hide recurrence rule",
+    "hide task count",
+    "hide toolbar",
+    "```"
+  ].join("\n");
+  await MarkdownRenderer.render(app, query, dv.container.createDiv({ cls: "task-mixed" }), dv.current().file.path, dv.component);
 }
 if (!pages.length) dv.paragraph("No tasks started or scheduled for today or earlier.");
 ```
@@ -95,8 +78,7 @@ if (card) {
     const recurrence = task[1].match(/🔁\s+(.+?)(?=\s+[🛫⏳📅]|$)/);
     const rule = recurrence ? recurrence[1].trim() : "";
     const interval = intervals.find(item => item.rule === rule);
-    const state = due[1] <= today ? "due" : scheduled[1] < today ? "scheduled" : "open";
-    found[interval ? interval.key : "once"].push({ state });
+    found[interval ? interval.key : "once"].push(1);
   }
 }
 const pathPattern = card ? card.file.path.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&") : "";
@@ -112,43 +94,37 @@ const trimBacklinks = () => {
 const backlinks = new MutationObserver(trimBacklinks);
 backlinks.observe(dv.container, { childList: true, subtree: true, characterData: true });
 dv.component.register(() => backlinks.disconnect());
-async function renderTasks(extraFilters, cls) {
+async function renderTasks(filters) {
+  // Keep due/scheduled in the DOM so CSS can mark due/reminder rows; they are visually hidden on .task-mixed.
   const query = [
     "```tasks",
     "not done",
     "has start date",
     "has due date",
     "((starts today) OR (starts before today))",
-    ...extraFilters,
+    ...filters,
     `path regex matches /^${pathPattern}$/`,
     "sort by due",
     "hide postpone button",
     "hide start date",
     "hide edit button",
-    "hide scheduled date",
-    "hide due date",
     "hide recurrence rule",
     "hide task count",
     "hide toolbar",
     "```"
   ].join("\n");
-  await MarkdownRenderer.render(app, query, dv.container.createDiv({ cls }), dv.current().file.path, dv.component);
-}
-async function renderGroup(entries, filters) {
-  if (entries.some(entry => entry.state === "due")) await renderTasks([...filters, "((due today) OR (due before today))"], "finance-due");
-  if (entries.some(entry => entry.state === "scheduled")) await renderTasks([...filters, "(scheduled before today)", "NOT ((due today) OR (due before today))"], "finance-scheduled");
-  if (entries.some(entry => entry.state === "open")) await renderTasks([...filters, "NOT ((due today) OR (due before today))", "NOT (scheduled before today)"], "finance-open");
+  await MarkdownRenderer.render(app, query, dv.container.createDiv({ cls: "task-mixed due-through-today" }), dv.current().file.path, dv.component);
 }
 let shown = 0;
 for (const interval of intervals) {
   if (!found[interval.key].length) continue;
   dv.header(3, interval.title);
-  await renderGroup(found[interval.key], [`recurrence regex matches /^${interval.rule}$/`]);
+  await renderTasks([`recurrence regex matches /^${interval.rule}$/`]);
   shown += found[interval.key].length;
 }
 if (found.once.length) {
   dv.header(3, "One-time");
-  await renderGroup(found.once, ["is not recurring"]);
+  await renderTasks(["is not recurring"]);
   shown += found.once.length;
 }
 if (!shown) dv.paragraph("No credit card benefits that can be used today or earlier.");

@@ -188,6 +188,46 @@
   margin-top: .35em;
 }
 
+/* Unified task list: due/scheduled stay in the DOM for Tasks data attributes, but stay hidden. */
+.compact-dashboard .task-mixed :is(.task-due, .task-scheduled) {
+  display: none;
+}
+.compact-dashboard .task-mixed .contains-task-list > .task-list-item:not(.is-checked)[data-task-due^="past-"]::after {
+  content: " 🔴";
+  display: inline;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+/* Credit Cards + Tomorrow: due today counts as due. */
+.compact-dashboard .task-mixed.due-through-today .contains-task-list > .task-list-item:not(.is-checked)[data-task-due="today"]::after {
+  content: " 🔴";
+  display: inline;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+/* Dashboard Tasks: scheduled before today, and due is not already past. */
+.compact-dashboard .task-mixed:not(.due-through-today) .contains-task-list > .task-list-item:not(.is-checked)[data-task-scheduled^="past-"]:not([data-task-due^="past-"])::after {
+  content: " 🟠";
+  display: inline;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+/* Credit Cards: scheduled before today, and due is still after today. */
+.compact-dashboard .task-mixed.due-through-today:not(.remind-through-today) .contains-task-list > .task-list-item:not(.is-checked)[data-task-scheduled^="past-"]:not([data-task-due^="past-"]):not([data-task-due="today"])::after {
+  content: " 🟠";
+  display: inline;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+/* Tomorrow: scheduled before tomorrow (past or today), and due is still tomorrow or later. */
+.compact-dashboard .task-mixed.remind-through-today .contains-task-list > .task-list-item:not(.is-checked)[data-task-scheduled^="past-"]:not([data-task-due^="past-"]):not([data-task-due="today"])::after,
+.compact-dashboard .task-mixed.remind-through-today .contains-task-list > .task-list-item:not(.is-checked)[data-task-scheduled="today"]:not([data-task-due^="past-"]):not([data-task-due="today"])::after {
+  content: " 🟠";
+  display: inline;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 /* Links and tags share one text flow, wrapping naturally on narrow screens. */
 .compact-dashboard .dashboard-directory .directory-entry > p {
   display: inline;
