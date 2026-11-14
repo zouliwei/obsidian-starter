@@ -74,7 +74,7 @@ if (card) {
     const start = task[1].match(/🛫 (\d{4}-\d{2}-\d{2})/);
     const scheduled = task[1].match(/⏳ (\d{4}-\d{2}-\d{2})/);
     const due = task[1].match(/📅 (\d{4}-\d{2}-\d{2})/);
-    if (!start || start[1] > today || !scheduled || !due) continue;
+    if (!start || !scheduled || scheduled[1] > today || !due) continue;
     const recurrence = task[1].match(/🔁\s+(.+?)(?=\s+[🛫⏳📅]|$)/);
     const rule = recurrence ? recurrence[1].trim() : "";
     const interval = intervals.find(item => item.rule === rule);
@@ -100,8 +100,9 @@ async function renderTasks(filters) {
     "```tasks",
     "not done",
     "has start date",
+    "has scheduled date",
     "has due date",
-    "((starts today) OR (starts before today))",
+    "((scheduled today) OR (scheduled before today))",
     ...filters,
     `path regex matches /^${pathPattern}$/`,
     "sort by due",
@@ -127,7 +128,7 @@ if (found.once.length) {
   await renderTasks(["is not recurring"]);
   shown += found.once.length;
 }
-if (!shown) dv.paragraph("No credit card benefits that can be used today or earlier.");
+if (!shown) dv.paragraph("No credit card benefits with a reminder for today or earlier.");
 ```
 
 ## [[Projects]]
