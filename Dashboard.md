@@ -7,7 +7,7 @@ cssclasses:
 ```dataviewjs
 const areas = ["growth", "finance", "fitness", "cooking", "travel", "lifestyle"];
 const today = dv.date("today").toMillis();
-const isBenefit = (page, task) => page.file.name === "Credit Cards" && task.due;
+const isBenefit = (page, task) => page.file.name === "Credit Cards";
 const isScheduledNow = (task) => task.scheduled && (task.scheduled.toMillis() === today || (task.scheduled.toMillis() < today && !task.completed));
 const isStartedNow = (task) => task.start && (task.start.toMillis() === today || (task.start.toMillis() < today && !task.completed) || (task.completed && task.due && task.start.toMillis() <= today && task.due.toMillis() >= today));
 const isListed = (page, task) => !isBenefit(page, task) && (isScheduledNow(task) || isStartedNow(task));
@@ -38,7 +38,7 @@ for (const group of groups) {
     "```tasks",
     listed,
     `path regex matches /^(?:${paths})$/`,
-    ...(group.key === "finance" ? ["((path regex does not match /Credit Cards\\.md$/) OR (no due date))"] : []),
+    ...(group.key === "finance" ? ["path regex does not match /Credit Cards\\.md$/"] : []),
     "sort by status.type",
     "sort by scheduled",
     "sort by priority",
@@ -65,7 +65,7 @@ const intervals = [
   { key: "half", title: "Half year", rule: "every 6 months" },
   { key: "year", title: "Yearly", rule: "every year" }
 ];
-const found = { month: [], quarter: [], half: [], year: [], once: [] };
+const found = { month: [], quarter: [], half: [], year: [], other: [] };
 if (card) {
   const text = await dv.io.load(card.file.path);
   for (const line of text.split("\n")) {
@@ -74,11 +74,11 @@ if (card) {
     const start = task[1].match(/🛫 (\d{4}-\d{2}-\d{2})/);
     const scheduled = task[1].match(/⏳ (\d{4}-\d{2}-\d{2})/);
     const due = task[1].match(/📅 (\d{4}-\d{2}-\d{2})/);
-    if (!start || !scheduled || scheduled[1] > today || !due) continue;
+    if (!scheduled || scheduled[1] > today) continue;
     const recurrence = task[1].match(/🔁\s+(.+?)(?=\s+[🛫⏳📅]|$)/);
     const rule = recurrence ? recurrence[1].trim() : "";
-    const interval = intervals.find(item => item.rule === rule);
-    found[interval ? interval.key : "once"].push(1);
+    const interval = start && due ? intervals.find(item => item.rule === rule) : null;
+    found[interval ? interval.key : "other"].push(1);
   }
 }
 const pathPattern = card ? card.file.path.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&") : "";
@@ -99,9 +99,7 @@ async function renderTasks(filters) {
   const query = [
     "```tasks",
     "not done",
-    "has start date",
     "has scheduled date",
-    "has due date",
     "((scheduled today) OR (scheduled before today))",
     ...filters,
     `path regex matches /^${pathPattern}$/`,
@@ -120,13 +118,13 @@ let shown = 0;
 for (const interval of intervals) {
   if (!found[interval.key].length) continue;
   dv.header(3, interval.title);
-  await renderTasks([`recurrence regex matches /^${interval.rule}$/`]);
+  await renderTasks(["has start date", "has due date", `recurrence regex matches /^${interval.rule}$/`]);
   shown += found[interval.key].length;
 }
-if (found.once.length) {
-  dv.header(3, "One-time");
-  await renderTasks(["is not recurring"]);
-  shown += found.once.length;
+if (found.other.length) {
+  dv.header(3, "Others");
+  await renderTasks(["((no start date) OR (no due date) OR (is not recurring))"]);
+  shown += found.other.length;
 }
 if (!shown) dv.paragraph("No credit card benefits with a reminder for today or earlier.");
 ```

@@ -7,7 +7,7 @@ cssclasses:
 ```dataviewjs
 const areas = ["growth", "finance", "fitness", "cooking", "travel", "lifestyle"];
 const tomorrow = dv.date("tomorrow").toMillis();
-const isBenefit = (page, task) => page.file.name === "Credit Cards" && task.due;
+const isBenefit = (page, task) => page.file.name === "Credit Cards";
 const isTomorrow = (page, task) => !isBenefit(page, task) && ((task.scheduled && task.scheduled.toMillis() === tomorrow) || (task.start && !task.completed && task.start.toMillis() <= tomorrow) || (task.completed && task.start && task.due && task.start.toMillis() <= tomorrow && task.due.toMillis() >= tomorrow));
 const pages = dv.pages().where(p => p.file.folder !== "system" && !p.file.folder.startsWith("system/")).where(p => p.file.tasks.some(t => isTomorrow(p, t)));
 const groups = pages.groupBy(p => p.area || "Other")
@@ -35,7 +35,7 @@ for (const group of groups) {
   const query = [
     "```tasks",
     listed,
-    "((path regex does not match /Credit Cards\\.md$/) OR (no due date))",
+    "path regex does not match /Credit Cards\\.md$/",
     `path regex matches /^(?:${paths})$/`,
     "sort by status.type",
     "sort by priority",
